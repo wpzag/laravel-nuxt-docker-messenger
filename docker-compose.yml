@@ -1,0 +1,156 @@
+version: '3.7'
+
+######### Services ###################################
+
+services:
+
+  # Server container
+  nginx:
+    image: jonasal/nginx-certbot:latest
+    container_name: nginx
+    hostname: ${HOSTNAME}
+    restart: unless-stopped
+    env_file:
+      - ./.env
+    ports:
+      - '${HTTP_PORT}:${HTTP_PORT}'
+      - '${HTTPS_PORT}:${HTTPS_PORT}'
+
+    volumes:
+      - ./api:/var/www/api
+      - ./docker/nginx/nginx_secrets:/etc/letsencrypt
+      - ./docker/nginx/logs:/var/log/nginx
+      - ./docker/nginx/templates:/etc/nginx/templates
+    depends_on:
+      - client
+      - php
+
+  # PHP FastCGI Process Manager container
+  php:
+    container_name: php
+    restart: always
+    build:
+      context: docker/php
+      dockerfile: Dockerfile
+    volumes:
+      - ./api:/var/www/api
+      - '${TMPDIR:-/tmp}:/opt'
+    #    command: "rm -r  /var/www/api/public/storage && cd  /var/www/api && php artisan storage:link"
+    env_file:
+      - .env
+
+
+    depends_on:
+      - mysql
+      - redis
+
+    # Supervisor container (schedule and queue runner)
+  supervisor:
+    container_name: supervisor
+    restart: always
+    build:
+      context: docker/supervisor
+      dockerfile: Dockerfile
+    env_file:
+      - .env
+    volumes:
+      - ./api:/var/www/api
+      - ./docker/supervisor/conf.d:/etc/supervisor/conf.d
+      - ./docker/supervisor/logs:/var/log
+    depends_on:
+      - mysql
+      - redis
+
+  # Mysql database container
+  mysql:
+    container_name: mysql
+    image: 'mysql:8.0'
+    ports:
+      - '${DB_PORT}:${DB_PORT}'
+    environment:
+      MYSQL_ROOT_PASSWORD: 'root'
+      MYSQL_DATABASE: ${DB_DATABASE}
+      MYSQL_USER: ${DB_USERNAME}
+      MYSQL_PASSWORD: ${DB_PASSWORD}
+    restart: always
+    volumes:
+      - 'database:/var/lib/mysql'
+
+  phpmyadmin:
+    container_name: phpmyadmin
+    image: phpmyadmin/phpmyadmin
+    links:
+      - mysql
+    environment:
+      PMA_HOST: mysql
+      PMA_PORT: ${DB_PORT}
+      PMA_ARBITRARY: 1
+      PMA_ABSOLUTE_URI: "${APP_URL}/phpmyadmin/"
+    restart: always
+
+  # Redis container
+  redis:
+    container_name: redis
+    restart: always
+    image: redis:6.2
+    ports:
+      - '${REDIS_PORT}:${REDIS_PORT}'
+    volumes:
+      - redis:/data
+
+  # Soketi container
+  soketi:
+    image: 'quay.io/soketi/soketi:latest-16-alpine'
+    container_name: soketi
+    ports:
+      - '${SOKETI_PORT}:${SOKETI_PORT}'
+    environment:
+      DEBUG: 1
+      DEFAULT_APP_KEY: ${SOKETI_APP_KEY}
+      DEFAULT_APP_ID: ${SOKETI_APP_ID}
+      DEFAULT_APP_SECRET: ${SOKETI_APP_SECRET}
+      DEFAULT_APP_ENABLE_CLIENT_MESSAGES: 'true'
+    restart: always
+
+  # Client container
+  client:
+    container_name: client
+    restart: always
+    build:
+      context: ./client
+      dockerfile: $PWD/docker/client/Dockerfile
+      args:
+        - SOKETI_APP_KEY=${SOKETI_APP_KEY}
+        - SOKETI_PORT=${SOKETI_PORT}
+        - API_URL=${API_URL}
+        - APP_ENV=${APP_ENV}
+        - HOSTNAME=${HOSTNAME}
+    environment:
+      - SOKETI_APP_KEY
+      - SOKETI_PORT
+      - HOSTNAME
+      - API_URL
+      - APP_ENV
+  portainer:
+    image: portainer/portainer-ce:latest
+    container_name: portainer
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+    environment:
+      - VIRTUAL_HOST=${HOSTNAME}
+      - VIRTUAL_PORT=9000
+
+    volumes:
+      - /etc/localtime:/etc/localtime:ro
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - ./portainer-data:/data
+
+
+######### Volumes ###################################
+
+volumes:
+  database:
+    driver: local
+  redis:
+    driver: local

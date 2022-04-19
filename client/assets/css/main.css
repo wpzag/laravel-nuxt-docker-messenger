@@ -1,0 +1,137 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Colors */
+@layer base {
+    :root {
+        --skin-primary: 37 99 235;
+        --skin-background-200: 255 255 255;
+        --skin-background-400: 255 255 255;
+        --skin-background-800: 255 255 255;
+        --skin-background-gray-50: 249 250 251;
+
+
+        --skin-base-border: 237 237 237;
+
+        --skin-base-text: 000 000 000;
+        --skin-secondary-text: 156 163 175;
+        --skin-caption-text: 209 213 219;
+    }
+}
+
+.tw-dark {
+    --skin-primary: 37 99 235;
+
+    /*--skin-primary: 59 130 246;*/
+    --skin-background-200: 28 30 31;
+    --skin-background-400: 23 25 26;
+    --skin-background-800: 19 19 20;
+    --skin-background-gray-50: 28 30 31;
+
+    --skin-base-border: 37 37 38;
+
+    --skin-base-text: 255 255 255;
+    --skin-secondary-text: 107 114 128;
+    --skin-caption-text: 75 85 99;
+}
+
+
+/*Utilities*/
+
+
+html,
+body {
+    overflow: hidden !important;
+}
+
+
+/*html, body {*/
+/*    height: 100%*/
+/*}*/
+
+.tw-transition-fix {
+    -webkit-backface-visibility: hidden;
+    -moz-backface-visibility: hidden;
+    -webkit-transform: translate3d(0, 0, 0);
+    -moz-transform: translate3d(0, 0, 0)
+}
+
+
+.tw-inset-center {
+
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%) !important;
+}
+
+.tw-inset-x-center {
+    @apply tw-left-1/2 tw-transform tw--translate-x-1/2;
+}
+
+.tw-inset-y-center {
+    @apply tw-top-1/2 tw-transform tw--translate-y-1/2;
+}
+
+.tw-fixed-overlay-full {
+    @apply tw-fixed tw-inset-0 tw-bg-black/30 tw-z-20;
+}
+
+
+.tw-flex-center {
+    @apply tw-flex tw-items-center tw-justify-center;
+}
+
+.tw-transition-defaults {
+    @apply tw-transition-all tw-duration-300 tw-ease-out;
+}
+
+.tw-hover-scale-sm {
+    @apply tw-transition-all tw-transform tw-duration-300 tw-ease-out hover:tw-scale-105;
+}
+
+.tw-hover-scale-xs {
+    @apply tw-transition-all tw-transform tw-duration-300 tw-ease-out hover:tw-scale-[1.02];
+}
+
+.tw-hover-scale-md {
+    @apply tw-transition-all tw-transform tw-duration-300 tw-ease-out hover:tw-scale-110;
+}
+
+.tw-shimmer {
+    @apply tw-bg-gray-200 dark:tw-bg-skin-background-200
+}
+
+.tw-link {
+    @apply tw-text-blue-500;
+}
+
+.link:hover {
+    @apply tw-text-blue-600;
+}
+
+/*Page Transitions*/
+
+.page-enter-active,
+.page-leave-active {
+    @apply tw-translate-x-0 tw-opacity-100 tw-transition-all tw-transform tw-ease-out
+    tw-duration-300;
+}
+
+.page-enter,
+.page-leave-to {
+    @apply tw-translate-x-3  tw-opacity-0;
+}
+
+.setting-enter-active,
+.setting-leave-active {
+    @apply tw-translate-x-0 tw-opacity-100 tw-transition-all tw-transform tw-ease-out
+    tw-duration-75 tw-delay-75;
+}
+
+.setting-enter,
+.setting-leave-to {
+    @apply tw-translate-x-3  tw-opacity-0;
+}
+
+

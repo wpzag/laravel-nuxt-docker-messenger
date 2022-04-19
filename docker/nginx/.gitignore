@@ -1,0 +1,6 @@
+# Created by .ignore support plugin (hsz.mobi)
+
+# dotenv environment variables file
+nginx_secrets
+logs
+

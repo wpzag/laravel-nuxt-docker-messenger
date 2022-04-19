@@ -1,0 +1,120 @@
+server {
+    listen ${HTTP_PORT};
+    listen [::]:${HTTP_PORT};
+    server_name ${HOSTNAME} www.${HOSTNAME};
+    return 301 https://${HOSTNAME}$request_uri;
+}
+server {
+
+    # Listen to port 443 on both IPv4 and IPv6.
+    listen  ${HTTPS_PORT} ssl;
+    listen [::]:${HTTPS_PORT} ssl;
+
+    # Domain names this server should respond to.
+    server_name ${HOSTNAME} www.${HOSTNAME};
+
+    # load client certs
+     ssl_certificate ${SSL_CERT_DIR};
+     ssl_certificate_key ${SSL_KEY_DIR};
+     ssl_trusted_certificate ${SSL_CHAIN_DIR};
+
+    ssl_protocols       TLSv1 TLSv1.1 TLSv1.2;
+    ssl_ciphers         HIGH:!aNULL:!MD5;
+
+
+    client_max_body_size 50m;
+
+    add_header X-Frame-Options "SAMEORIGIN";
+    add_header X-XSS-Protection "1; mode=block";
+    add_header X-Content-Type-Options "nosniff";
+
+    charset utf-8;
+
+
+   # Load the Diffie-Hellman parameter.
+    ssl_dhparam /etc/letsencrypt/dhparams/dhparam.pem;
+
+    # Nuxt server (client)
+   location / {
+        proxy_redirect                      off;
+        proxy_set_header X-Real-IP          $remote_addr;
+        proxy_set_header X-Forwarded-For    $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto  $scheme;
+        proxy_read_timeout                  1m;
+        proxy_connect_timeout               1m;
+
+        proxy_pass http://client:3000;
+    }
+
+     # Phpmyadmin server
+     location  ~ ^/(phpmyadmin|phpmyadmin/(.+\.php)$)/  {
+         rewrite ^/phpmyadmin(.*)$ $1 break;
+         proxy_set_header X-Real-IP          $remote_addr;
+         proxy_set_header X-Forwarded-For    $proxy_add_x_forwarded_for;
+         proxy_set_header X-Forwarded-Proto  $scheme;
+         proxy_read_timeout                  1m;
+         proxy_connect_timeout               1m;
+
+         proxy_pass http://phpmyadmin;
+     }
+
+     # Portainer server
+     location /portainer/ {
+         rewrite ^/portainer(.*)$ $1 break;
+         proxy_set_header X-Real-IP          $remote_addr;
+         proxy_set_header X-Forwarded-For    $proxy_add_x_forwarded_for;
+         proxy_set_header X-Forwarded-Proto  $scheme;
+         proxy_read_timeout                  1m;
+         proxy_connect_timeout               1m;
+
+         proxy_pass http://portainer:9000;
+      }
+     location /portainer/api/websocket/ {
+          rewrite ^/portainer(.*)$ $1 break;
+          proxy_set_header Upgrade $http_upgrade;
+          proxy_set_header Connection "upgrade";
+          proxy_http_version 1.1;
+
+          proxy_pass http://portainer:9000/api/websocket/;
+       }
+
+      # Soketi server (websockets)
+      location /app  {
+           proxy_read_timeout 30;
+           proxy_connect_timeout 60;
+           proxy_redirect off;
+           proxy_set_header X-Real-IP $remote_addr;
+           proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+
+           # Allow the use of websockets
+           proxy_http_version 1.1;
+           proxy_set_header Upgrade $http_upgrade;
+           proxy_set_header Connection 'Upgrade';
+           proxy_set_header Host $host;
+           proxy_cache_bypass $http_upgrade;
+
+           proxy_pass http://soketi:6001;
+
+	}
+
+      # Laravel server (api)
+        index index.php index.html;
+        root /var/www/api/public;
+        location ~ ^/(api|storage|messenger/assets*)/ {
+             try_files $uri $uri/ /index.php$is_args$args;
+
+    }
+       location  ~ \.php$ {
+                        fastcgi_split_path_info ^(.+\.php)(/.+)$;
+                        fastcgi_pass php:9000;
+                        fastcgi_index index.php;
+                        include fastcgi_params;
+                        fastcgi_param SCRIPT_FILENAME $document_root/$fastcgi_script_name;
+                        fastcgi_param PATH_INFO $fastcgi_path_info;
+                    }
+        access_log /var/log/nginx/access.log;
+        error_log /var/log/nginx/error.log;
+}
+
+
+
