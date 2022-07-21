@@ -34,6 +34,9 @@ server {
    # Load the Diffie-Hellman parameter.
     ssl_dhparam /etc/letsencrypt/dhparams/dhparam.pem;
 
+    # Allow certbot to serve the certs.
+    location ~ /.well-known {         allow all; }
+
     # Nuxt server (client)
    location / {
         proxy_redirect                      off;

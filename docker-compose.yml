@@ -24,7 +24,6 @@ services:
     depends_on:
       - client
       - php
-
   # PHP FastCGI Process Manager container
   php:
     container_name: php
@@ -60,7 +59,6 @@ services:
     depends_on:
       - mysql
       - redis
-
   # Mysql database container
   mysql:
     container_name: mysql
@@ -111,7 +109,6 @@ services:
       DEFAULT_APP_SECRET: ${SOKETI_APP_SECRET}
       DEFAULT_APP_ENABLE_CLIENT_MESSAGES: 'true'
     restart: always
-
   # Client container
   client:
     container_name: client
